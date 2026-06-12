@@ -46,12 +46,12 @@
     <header>
         <h1>Event Browsing & Registration</h1>
         <nav>
-    <a href="/">Home</a>
-    <a href="/events">Events</a>
-    <a href="/event-details">Event Details</a>
-    <a href="/register">Register</a>
-    <a href="/about">About</a>
-</nav>
+            <a href="/">Home</a>
+            <a href="/events">Events</a>
+            <a href="/event-details">Event Details</a>
+            <a href="/register">Register</a>
+            <a href="/about">About</a>
+        </nav>
     </header>
 
     <main>
@@ -91,21 +91,63 @@
     </main>
 
     <script>
-        document.getElementById('rsvpForm').addEventListener('submit', function(event) {
+        document.getElementById('rsvpForm').addEventListener('submit', async function(event) {
             // Prevent the default form submission (page reload)
             event.preventDefault();
 
-            // Grab the values from the form inputs
+            // 1. Grab the values from the form inputs
             const name = document.getElementById('fullName').value;
+            const email = document.getElementById('email').value;
+            const eventValue = document.getElementById('eventSelect').value;
             const eventName = document.getElementById('eventSelect').options[document.getElementById('eventSelect').selectedIndex].text;
+            const guests = document.getElementById('guests').value;
 
-            // Generate a confirmation message
-            const messageElement = document.getElementById('successMessage');
-            messageElement.innerHTML = `<strong>Thank you, ${name}!</strong> Your RSVP for the <em>${eventName}</em> has been received successfully.`;
-            messageElement.style.display = 'block';
+            // 2. Package data into a clean JSON object
+            const updatedData = {
+                fullName: name,
+                email: email,
+                eventSelected: eventValue,
+                guests: parseInt(guests, 10)
+            };
 
-            // Clear the form fields
-            document.getElementById('rsvpForm').reset();
+            try {
+                // 3. Send the asynchronous PUT request to the backend server
+                // Note: Change '/api/register' if your backend endpoint uses a different URL path
+                const response = await fetch('/api/register', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedData)
+                });
+
+                // 4. Handle response from the server
+                if (response.ok) {
+                    const messageElement = document.getElementById('successMessage');
+                    
+                    // Display the local confirmation message dynamically
+                    messageElement.innerHTML = `<strong>Thank you, ${name}!</strong> Your registration for the <em>${eventName}</em> has been updated successfully.`;
+                    messageElement.style.color = '#155724';
+                    messageElement.style.backgroundColor = '#d4edda';
+                    messageElement.style.borderColor = '#c3e6cb';
+                    messageElement.style.display = 'block';
+
+                    // Clear the form fields
+                    document.getElementById('rsvpForm').reset();
+                } else {
+                    // Display error styling if the server throws an error code
+                    const messageElement = document.getElementById('successMessage');
+                    messageElement.innerHTML = `<strong>Error:</strong> Failed to update registration. Server returned status code: ${response.status}`;
+                    messageElement.style.color = '#721c24';
+                    messageElement.style.backgroundColor = '#f8d7da';
+                    messageElement.style.borderColor = '#f5c6cb';
+                    messageElement.style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error('Network Error:', error);
+                alert('Could not reach the server. Please ensure your backend is running.');
+            }
         });
     </script>
 </body>
