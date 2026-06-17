@@ -1,7 +1,6 @@
 const express = require('express');
 const path = require('path');
 const { pool, testConnection } = require('./database');
-
 const app = express();
 const PORT = process.env.PORT || 8080;
 
