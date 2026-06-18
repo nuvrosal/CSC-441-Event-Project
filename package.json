@@ -2,9 +2,10 @@
   "name": "csc-441-event-project",
   "version": "1.0.0",
   "description": "Event Browsing &amp; Registration Team Project",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "repository": {
     "type": "git",
@@ -19,6 +20,7 @@
   },
   "homepage": "https://github.com/nuvrosal/CSC-441-Event-Project#readme",
   "dependencies": {
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "mysql2": "^3.22.5"
   }
 }

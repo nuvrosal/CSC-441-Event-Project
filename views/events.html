@@ -9,36 +9,66 @@
     <header>
         <h1>Event Browsing & Registration</h1>
         <nav>
-    <a href="/">Home</a>
-    <a href="/events">Events</a>
-    <a href="/event-details">Event Details</a>
-    <a href="/register">Register</a>
-    <a href="/about">About</a>
-</nav>
+            <a href="/">Home</a>
+            <a href="/events">Events</a>
+            <a href="/event-details">Event Details</a>
+            <a href="/register">Register</a>
+            <a href="/about">About</a>
+        </nav>
     </header>
 
     <main>
         <h2>Upcoming Events</h2>
-        <ul class="event-list">
-            <li>
-                <h3>Tech Conference 2024</h3>
-                <p>Date: June 15, 2024</p>
-                <p>Location: San Francisco, CA</p>
-                <a href="/event-details?event=tech-conference-2024">View Details</a>
-            </li>
-            <li>
-                <h3>Health & Wellness Expo</h3>
-                <p>Date: July 20, 2024</p>
-                <p>Location: New York, NY</p>
-                <a href="/event-details?event=health-wellness-expo">View Details</a>
-            </li>
-            <li>
-                <h3>Art & Culture Festival</h3>
-                <p>Date: August 10, 2024</p>
-                <p>Location: Chicago, IL</p>
-                <a href="/event-details?event=art-culture-festival">View Details</a>
-            </li>
+        <ul id="eventList" class="event-list">
+            <li>Loading events...</li>
         </ul>
     </main>
+
+    <script>
+        function formatDate(value) {
+            const date = new Date(value);
+            return date.toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        async function loadEvents() {
+            const eventList = document.getElementById('eventList');
+
+            try {
+                const response = await fetch('/api/events');
+
+                if (!response.ok) {
+                    throw new Error('Events could not be loaded.');
+                }
+
+                const events = await response.json();
+                eventList.innerHTML = '';
+
+                if (events.length === 0) {
+                    eventList.innerHTML = '<li>No events have been added yet.</li>';
+                    return;
+                }
+
+                events.forEach(eventItem => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <h3>${eventItem.event_title}</h3>
+                        <p><strong>Date:</strong> ${formatDate(eventItem.event_date)}</p>
+                        <p><strong>Location:</strong> ${eventItem.event_location}</p>
+                        <a href="/event-details?event=${eventItem.event_id}">View Details</a>
+                    `;
+                    eventList.appendChild(li);
+                });
+            } catch (error) {
+                console.error(error);
+                eventList.innerHTML = '<li>Could not load events. Make sure the database is running.</li>';
+            }
+        }
+
+        loadEvents();
+    </script>
 </body>
 </html>

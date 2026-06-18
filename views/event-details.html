@@ -10,45 +10,66 @@
     <header>
         <h1>Event Browsing & Registration</h1>
         <nav>
-    <a href="/">Home</a>
-    <a href="/events">Events</a>
-    <a href="/event-details">Event Details</a>
-    <a href="/register">Register</a>
-    <a href="/about">About</a>
-</nav>
+            <a href="/">Home</a>
+            <a href="/events">Events</a>
+            <a href="/event-details">Event Details</a>
+            <a href="/register">Register</a>
+            <a href="/about">About</a>
+        </nav>
     </header>
 
     <main>
         <h2>Event Details</h2>
 
-        <section>
-            <h3>Community Tech Workshop</h3>
-
-            <p>
-                <strong>Event Date:</strong> July 15, 2026
-            </p>
-
-            <p>
-                <strong>Event Location:</strong> Detroit Community Center
-            </p>
-
-            <p>
-                <strong>Event Details:</strong>
-                This event is designed to introduce participants to basic web development,
-                including HTML, CSS, and JavaScript. Attendees will learn how websites are
-                structured and how different pages connect together.
-            </p>
+        <section id="eventDetails">
+            <p>Loading event details...</p>
         </section>
     </main>
 
-    <script src="../scripts/main.js"></script>
     <script>
-    const params = new URLSearchParams(window.location.search);
-    const eventId = params.get("event");
+        function formatDate(value) {
+            const date = new Date(value);
+            return date.toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
 
-    console.log("Loaded event:", eventId);
+        async function loadEventDetails() {
+            const detailsSection = document.getElementById('eventDetails');
+            const params = new URLSearchParams(window.location.search);
+            const eventId = params.get('event');
 
-</script>
+            if (!eventId) {
+                detailsSection.innerHTML = '<p>Please select an event from the Events page.</p>';
+                return;
+            }
 
+            try {
+                const response = await fetch(`/api/events/${eventId}`);
+
+                if (!response.ok) {
+                    throw new Error('Event details could not be loaded.');
+                }
+
+                const eventItem = await response.json();
+
+                detailsSection.innerHTML = `
+                    <h3>${eventItem.event_title}</h3>
+                    <p><strong>Event Date:</strong> ${formatDate(eventItem.event_date)}</p>
+                    <p><strong>Event Time:</strong> ${eventItem.event_time || 'TBD'}</p>
+                    <p><strong>Event Location:</strong> ${eventItem.event_location}</p>
+                    <p><strong>Event Details:</strong> ${eventItem.event_details}</p>
+                    <p><a href="/register?event=${eventItem.event_id}">Register for this event</a></p>
+                `;
+            } catch (error) {
+                console.error(error);
+                detailsSection.innerHTML = '<p>Could not load this event. Make sure the database is running.</p>';
+            }
+        }
+
+        loadEventDetails();
+    </script>
 </body>
 </html>

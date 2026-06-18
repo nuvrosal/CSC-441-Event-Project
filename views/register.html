@@ -5,7 +5,6 @@
     <title>Event Project - Register</title>
     <link rel="stylesheet" href="../styles/main.css">
     <style>
-        /* Optional internal styles to keep the form looking tidy if main.css doesn't cover it */
         .form-group {
             margin-bottom: 15px;
         }
@@ -33,8 +32,6 @@
         #successMessage {
             margin-top: 15px;
             padding: 10px;
-            background-color: #d4edda;
-            color: #155724;
             border: 1px solid #c3e6cb;
             display: none;
             max-width: 400px;
@@ -60,28 +57,20 @@
 
         <form id="rsvpForm">
             <div class="form-group">
-                <label for="fullName">Full Name:</label>
-                <input type="text" id="fullName" name="fullName" required placeholder="John Doe">
+                <label for="firstName">First Name:</label>
+                <input type="text" id="firstName" name="firstName" required placeholder="John">
             </div>
 
             <div class="form-group">
-                <label for="email">Email Address:</label>
-                <input type="email" id="email" name="email" required placeholder="john@example.com">
+                <label for="lastName">Last Name:</label>
+                <input type="text" id="lastName" name="lastName" required placeholder="Doe">
             </div>
 
             <div class="form-group">
                 <label for="eventSelect">Select Event:</label>
                 <select id="eventSelect" name="eventSelect" required>
                     <option value="" disabled selected>-- Choose an event --</option>
-                    <option value="tech-conference">Tech Conference 2024 (San Francisco)</option>
-                    <option value="health-expo">Health and Wellness Expo (New York)</option>
-                    <option value="art-festival">Art and Culture Festival (Chicago)</option>
                 </select>
-            </div>
-
-            <div class="form-group">
-                <label for="guests">Number of Guests:</label>
-                <input type="number" id="guests" name="guests" min="0" max="5" value="0">
             </div>
 
             <button type="submit">Submit RSVP</button>
@@ -91,64 +80,84 @@
     </main>
 
     <script>
+        function showMessage(message, isError = false) {
+            const messageElement = document.getElementById('successMessage');
+            messageElement.innerHTML = message;
+            messageElement.style.color = isError ? '#721c24' : '#155724';
+            messageElement.style.backgroundColor = isError ? '#f8d7da' : '#d4edda';
+            messageElement.style.borderColor = isError ? '#f5c6cb' : '#c3e6cb';
+            messageElement.style.display = 'block';
+        }
+
+        async function loadEventOptions() {
+            const select = document.getElementById('eventSelect');
+            const params = new URLSearchParams(window.location.search);
+            const selectedEventId = params.get('event');
+
+            try {
+                const response = await fetch('/api/events');
+
+                if (!response.ok) {
+                    throw new Error('Events could not be loaded.');
+                }
+
+                const events = await response.json();
+
+                events.forEach(eventItem => {
+                    const option = document.createElement('option');
+                    option.value = eventItem.event_id;
+                    option.textContent = eventItem.event_title;
+
+                    if (selectedEventId && selectedEventId === String(eventItem.event_id)) {
+                        option.selected = true;
+                    }
+
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error(error);
+                showMessage('Could not load events. Make sure the database is running.', true);
+            }
+        }
+
         document.getElementById('rsvpForm').addEventListener('submit', async function(event) {
-            // Prevent the default form submission (page reload)
             event.preventDefault();
 
-            // 1. Grab the values from the form inputs
-            const name = document.getElementById('fullName').value;
-            const email = document.getElementById('email').value;
-            const eventValue = document.getElementById('eventSelect').value;
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const eventId = document.getElementById('eventSelect').value;
             const eventName = document.getElementById('eventSelect').options[document.getElementById('eventSelect').selectedIndex].text;
-            const guests = document.getElementById('guests').value;
 
-            // 2. Package data into a clean JSON object
-            const updatedData = {
-                fullName: name,
-                email: email,
-                eventSelected: eventValue,
-                guests: parseInt(guests, 10)
+            const registrationData = {
+                firstName,
+                lastName,
+                eventId
             };
 
             try {
-                // 3. Send the asynchronous PUT request to the backend server
-                // Note: Change '/api/register' if your backend endpoint uses a different URL path
                 const response = await fetch('/api/register', {
-                    method: 'PUT',
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(updatedData)
+                    body: JSON.stringify(registrationData)
                 });
 
-                // 4. Handle response from the server
-                if (response.ok) {
-                    const messageElement = document.getElementById('successMessage');
-                    
-                    // Display the local confirmation message dynamically
-                    messageElement.innerHTML = `<strong>Thank you, ${name}!</strong> Your registration for the <em>${eventName}</em> has been updated successfully.`;
-                    messageElement.style.color = '#155724';
-                    messageElement.style.backgroundColor = '#d4edda';
-                    messageElement.style.borderColor = '#c3e6cb';
-                    messageElement.style.display = 'block';
+                const result = await response.json();
 
-                    // Clear the form fields
+                if (response.ok) {
+                    showMessage(`<strong>Thank you, ${firstName}!</strong> Your registration for <em>${eventName}</em> was saved.`);
                     document.getElementById('rsvpForm').reset();
                 } else {
-                    // Display error styling if the server throws an error code
-                    const messageElement = document.getElementById('successMessage');
-                    messageElement.innerHTML = `<strong>Error:</strong> Failed to update registration. Server returned status code: ${response.status}`;
-                    messageElement.style.color = '#721c24';
-                    messageElement.style.backgroundColor = '#f8d7da';
-                    messageElement.style.borderColor = '#f5c6cb';
-                    messageElement.style.display = 'block';
+                    showMessage(`<strong>Error:</strong> ${result.message}`, true);
                 }
-
             } catch (error) {
                 console.error('Network Error:', error);
-                alert('Could not reach the server. Please ensure your backend is running.');
+                showMessage('Could not reach the server. Make sure your backend and database are running.', true);
             }
         });
+
+        loadEventOptions();
     </script>
 </body>
 </html>
