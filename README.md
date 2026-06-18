@@ -69,3 +69,16 @@ http://localhost:8080
 - `views/events.html` now loads events from the database.
 - `views/event-details.html` now loads event details by event ID.
 - `views/register.html` now loads database events into the dropdown and saves registrations.
+
+## MongoDB Review Seed Data
+
+This project also includes sample MongoDB reviews/comments for each event.
+
+After MongoDB is running and your `.env` file has `MONGO_URI`, run:
+
+```bash
+npm run seed:reviews
+```
+
+This adds 5 reviews for each of the 10 sample events, for a total of 50 MongoDB review documents.
+
