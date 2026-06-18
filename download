@@ -1,0 +1,8 @@
+# MySQL database settings
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=EventProject
+DB_PORT=3306
+
+MONGO_URI=mongodb://127.0.0.1:27017/EventProjectMongo

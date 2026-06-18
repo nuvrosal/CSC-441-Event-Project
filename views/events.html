@@ -11,17 +11,20 @@
         <nav>
             <a href="/">Home</a>
             <a href="/events">Events</a>
+            <a href="/calendar">Calendar</a>
             <a href="/event-details">Event Details</a>
             <a href="/register">Register</a>
             <a href="/about">About</a>
         </nav>
     </header>
 
-    <main>
+    <main class="events-page">
         <h2>Upcoming Events</h2>
-        <ul id="eventList" class="event-list">
-            <li>Loading events...</li>
-        </ul>
+        <p class="page-intro">Browse local San Diego events and click View Details to learn more or register.</p>
+
+        <div id="eventList" class="event-grid">
+            <div class="event-card">Loading events...</div>
+        </div>
     </main>
 
     <script>
@@ -48,23 +51,24 @@
                 eventList.innerHTML = '';
 
                 if (events.length === 0) {
-                    eventList.innerHTML = '<li>No events have been added yet.</li>';
+                    eventList.innerHTML = '<div class="event-card">No events have been added yet.</div>';
                     return;
                 }
 
                 events.forEach(eventItem => {
-                    const li = document.createElement('li');
-                    li.innerHTML = `
+                    const card = document.createElement('div');
+                    card.className = 'event-card';
+                    card.innerHTML = `
                         <h3>${eventItem.event_title}</h3>
                         <p><strong>Date:</strong> ${formatDate(eventItem.event_date)}</p>
                         <p><strong>Location:</strong> ${eventItem.event_location}</p>
-                        <a href="/event-details?event=${eventItem.event_id}">View Details</a>
+                        <a class="btn" href="/event-details?event=${eventItem.event_id}">View Details</a>
                     `;
-                    eventList.appendChild(li);
+                    eventList.appendChild(card);
                 });
             } catch (error) {
                 console.error(error);
-                eventList.innerHTML = '<li>Could not load events. Make sure the database is running.</li>';
+                eventList.innerHTML = '<div class="event-card">Could not load events. Make sure the database is running.</div>';
             }
         }
 

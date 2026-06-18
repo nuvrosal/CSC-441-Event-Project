@@ -12,6 +12,7 @@
         <nav>
             <a href="/">Home</a>
             <a href="/events">Events</a>
+            <a href="/calendar">Calendar</a>
             <a href="/event-details">Event Details</a>
             <a href="/register">Register</a>
             <a href="/about">About</a>
@@ -24,9 +25,39 @@
         <section id="eventDetails">
             <p>Loading event details...</p>
         </section>
+
+        <section class="comments-section">
+            <h2>Event Comments and Reviews</h2>
+
+            <form id="commentForm">
+                <label for="commentName">Name:</label>
+                <input type="text" id="commentName" required>
+
+                <label for="commentRating">Rating:</label>
+                <select id="commentRating">
+                    <option value="5">5 - Great</option>
+                    <option value="4">4 - Good</option>
+                    <option value="3">3 - Okay</option>
+                    <option value="2">2 - Fair</option>
+                    <option value="1">1 - Poor</option>
+                </select>
+
+                <label for="commentText">Comment:</label>
+                <textarea id="commentText" required></textarea>
+
+                <button type="submit">Submit Comment</button>
+            </form>
+
+            <div id="commentsList">
+                <p>Loading comments...</p>
+            </div>
+        </section>
     </main>
 
     <script>
+        const params = new URLSearchParams(window.location.search);
+        const eventId = params.get('event') || params.get('id');
+
         function formatDate(value) {
             const date = new Date(value);
             return date.toLocaleDateString(undefined, {
@@ -38,11 +69,11 @@
 
         async function loadEventDetails() {
             const detailsSection = document.getElementById('eventDetails');
-            const params = new URLSearchParams(window.location.search);
-            const eventId = params.get('event');
 
             if (!eventId) {
                 detailsSection.innerHTML = '<p>Please select an event from the Events page.</p>';
+                document.getElementById('commentsList').innerHTML = '<p>No event selected.</p>';
+                document.getElementById('commentForm').style.display = 'none';
                 return;
             }
 
@@ -61,7 +92,7 @@
                     <p><strong>Event Time:</strong> ${eventItem.event_time || 'TBD'}</p>
                     <p><strong>Event Location:</strong> ${eventItem.event_location}</p>
                     <p><strong>Event Details:</strong> ${eventItem.event_details}</p>
-                    <p><a href="/register?event=${eventItem.event_id}">Register for this event</a></p>
+                    <p><a class="btn" href="/register?event=${eventItem.event_id}">Register for this event</a></p>
                 `;
             } catch (error) {
                 console.error(error);
@@ -69,7 +100,82 @@
             }
         }
 
+        async function loadComments() {
+            const commentsList = document.getElementById('commentsList');
+
+            if (!eventId) {
+                commentsList.innerHTML = '<p>No event selected.</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/events/${eventId}/comments`);
+
+                if (!response.ok) {
+                    throw new Error('Comments could not be loaded.');
+                }
+
+                const comments = await response.json();
+
+                if (comments.length === 0) {
+                    commentsList.innerHTML = '<p>No comments yet. Be the first to leave one.</p>';
+                    return;
+                }
+
+                commentsList.innerHTML = comments.map(comment => `
+                    <div class="comment-card">
+                        <h3>${comment.name}</h3>
+                        <p><strong>Rating:</strong> ${comment.rating || 'No rating'}</p>
+                        <p>${comment.comment}</p>
+                        <small>${new Date(comment.created_at).toLocaleString()}</small>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error(error);
+                commentsList.innerHTML = '<p>Error loading comments.</p>';
+            }
+        }
+
+        document.getElementById('commentForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            if (!eventId) {
+                alert('No event selected. Please open this page from the Events page.');
+                return;
+            }
+
+            const name = document.getElementById('commentName').value;
+            const rating = document.getElementById('commentRating').value;
+            const comment = document.getElementById('commentText').value;
+
+            try {
+                const response = await fetch(`/api/events/${eventId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name,
+                        rating,
+                        comment
+                    })
+                });
+
+                if (response.ok) {
+                    document.getElementById('commentForm').reset();
+                    loadComments();
+                } else {
+                    const result = await response.json();
+                    alert(result.message || 'Comment could not be saved.');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error saving comment.');
+            }
+        });
+
         loadEventDetails();
+        loadComments();
     </script>
 </body>
 </html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Event Project - Calendar</title>
+    <link rel="stylesheet" href="../styles/main.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
+</head>
+
+<body>
+    <header>
+        <h1>Event Browsing & Registration</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/events">Events</a>
+            <a href="/calendar">Calendar</a>
+            <a href="/event-details">Event Details</a>
+            <a href="/register">Register</a>
+            <a href="/about">About</a>
+        </nav>
+    </header>
+
+    <main>
+        <h2>Event Calendar</h2>
+        <p>Click an event on the calendar to view the event details.</p>
+        <section class="calendar-section">
+            <div id="calendar"></div>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const calendarEl = document.getElementById('calendar');
+
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                height: 'auto',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listWeek'
+                },
+                events: '/api/calendar-events',
+                eventClick: function (info) {
+                    info.jsEvent.preventDefault();
+                    window.location.href = `/event-details?event=${info.event.id}`;
+                },
+                eventDidMount: function (info) {
+                    if (info.event.extendedProps.location) {
+                        info.el.title = info.event.extendedProps.location;
+                    }
+                }
+            });
+
+            calendar.render();
+        });
+    </script>
+</body>
+</html>

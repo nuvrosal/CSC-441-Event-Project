@@ -1,8 +1,13 @@
 const express = require('express');
 const path = require('path');
 const { pool, testConnection } = require('./database');
+const connectMongoDB = require("./mongoDatabase");
+const EventComment = require("./models/EventComment");
+
 const app = express();
 const PORT = process.env.PORT || 8080;
+
+connectMongoDB();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -16,6 +21,10 @@ app.get('/', (req, res) => {
 
 app.get('/events', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'events.html'));
+});
+
+app.get('/calendar', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'calendar.html'));
 });
 
 app.get('/event-details', (req, res) => {
@@ -49,6 +58,51 @@ app.get('/api/events', async (req, res) => {
   } catch (error) {
     console.error('Error loading events:', error.message);
     res.status(500).json({ message: 'Unable to load events.' });
+  }
+});
+
+
+// API: Get events formatted for FullCalendar
+app.get('/api/calendar-events', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT
+        event_id,
+        event_title,
+        event_date,
+        event_time,
+        event_location,
+        event_details
+      FROM Events
+      ORDER BY event_date, event_time
+    `);
+
+    const calendarEvents = rows.map(eventItem => {
+      let eventDate = eventItem.event_date;
+
+      if (eventDate instanceof Date) {
+        eventDate = eventDate.toISOString().split('T')[0];
+      }
+
+      const start = eventItem.event_time
+        ? `${eventDate}T${eventItem.event_time}`
+        : eventDate;
+
+      return {
+        id: eventItem.event_id,
+        title: eventItem.event_title,
+        start: start,
+        extendedProps: {
+          location: eventItem.event_location,
+          details: eventItem.event_details
+        }
+      };
+    });
+
+    res.json(calendarEvents);
+  } catch (error) {
+    console.error('Error loading calendar events:', error.message);
+    res.status(500).json({ message: 'Unable to load calendar events.' });
   }
 });
 
@@ -132,6 +186,57 @@ async function saveRegistration(req, res) {
 
 app.post('/api/register', saveRegistration);
 app.put('/api/register', saveRegistration);
+
+app.get("/api/events/:id/comments", async (req, res) => {
+  try {
+    const eventId = Number(req.params.id);
+
+    if (!Number.isInteger(eventId)) {
+      return res.status(400).json({ message: "Invalid event ID" });
+    }
+
+    const comments = await EventComment.find({ event_id: eventId })
+      .sort({ created_at: -1 });
+
+    res.json(comments);
+  } catch (error) {
+    console.error("Error loading comments:", error);
+    res.status(500).json({ message: "Error loading comments" });
+  }
+});
+
+app.post("/api/events/:id/comments", async (req, res) => {
+  try {
+    const eventId = Number(req.params.id);
+    const { name, comment, rating } = req.body;
+
+    if (!Number.isInteger(eventId)) {
+      return res.status(400).json({ message: "Invalid event ID" });
+    }
+
+    if (!name || !comment) {
+      return res.status(400).json({ message: "Name and comment are required" });
+    }
+
+    const newComment = new EventComment({
+      event_id: eventId,
+      name: name.trim(),
+      comment: comment.trim(),
+      rating: rating ? Number(rating) : undefined
+    });
+
+    await newComment.save();
+
+    res.status(201).json({
+      message: "Comment saved successfully",
+      comment: newComment
+    });
+  } catch (error) {
+    console.error("Error saving comment:", error);
+    res.status(500).json({ message: "Error saving comment" });
+  }
+});
+
 
 async function startServer() {
   try {
